@@ -7,17 +7,45 @@ export interface ExorcismReport {
   demonName: string;
 }
 
+export interface Translation {
+  code: string;
+  notes: string;
+}
+
+export interface Documentation {
+  plainSummary: string;
+  stepByStep: string[];
+  historicalContext: string;
+  modernEquivalent: string;
+  useCases: string[];
+  technicalDocs?: string;
+  learningNotes?: string;
+}
+
 export interface ResurrectionResult {
   id: string;
   author: string;
   originalCode: string;
-  resurrectedCode: string;
-  language: string;
+  resurrectedCode: string; // This will act as the "main" translation or explanation
+  language: string; // Original detected language
   targetLanguage: string;
+  translations?: Record<string, Translation>;
+  explanation?: string;
+  confidence?: number;
+  holes?: [number, number][];
   exorcismReport: ExorcismReport[];
+  documentation?: Documentation;
   status: 'haunting' | 'purified' | 'failed';
   timestamp: number;
   likes: number;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  unlocked: boolean;
 }
 
 export interface User {
@@ -38,7 +66,10 @@ export interface SpectralMessage {
   to: string;
   timestamp: number;
   encryptedGrid: PunchGrid;
+  ciphertext?: string;
+  keyCardId?: string;
   isDecrypted: boolean;
+  plaintext?: string;
 }
 
 export enum CardRow {
