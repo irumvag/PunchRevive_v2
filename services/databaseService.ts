@@ -1,5 +1,5 @@
 
-import { User, ResurrectionResult, SpectralMessage } from '../types';
+import { User, RestorationResult, SecureMessage } from '../types';
 
 const STORAGE_KEYS = {
   USERS: 'punchrevive_db_users',
@@ -30,21 +30,21 @@ export const database = {
   },
 
   // --- CARD OPERATIONS ---
-  getCards: (): ResurrectionResult[] => JSON.parse(localStorage.getItem(STORAGE_KEYS.CARDS) || '[]'),
+  getCards: (): RestorationResult[] => JSON.parse(localStorage.getItem(STORAGE_KEYS.CARDS) || '[]'),
   
-  saveCard: (card: ResurrectionResult) => {
+  saveCard: (card: RestorationResult) => {
     const cards = database.getCards();
     cards.unshift(card);
     localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(cards.slice(0, 50)));
   },
 
   // --- MESSAGE OPERATIONS ---
-  getMessages: (username: string): SpectralMessage[] => {
-    const msgs: SpectralMessage[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES) || '[]');
+  getMessages: (username: string): SecureMessage[] => {
+    const msgs: SecureMessage[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES) || '[]');
     return msgs.filter(m => m.to === username || m.from === username);
   },
 
-  sendMessage: (msg: SpectralMessage) => {
+  sendMessage: (msg: SecureMessage) => {
     const msgs = JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES) || '[]');
     msgs.unshift(msg);
     localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(msgs));

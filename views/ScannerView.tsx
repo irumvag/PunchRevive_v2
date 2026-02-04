@@ -1,23 +1,33 @@
 
-import React, { useState, useRef } from 'react';
-import { Camera, Zap, FileCode, RefreshCw, Skull, FlaskConical, Download, CheckCircle2, Copy, BookOpen, Clock, FileText, ChevronRight } from 'lucide-react';
-import { PunchGrid, User, ResurrectionResult, Translation, Documentation } from '../types';
+import React, { useState } from 'react';
+import { RefreshCw, Cpu, Copy, Activity, Share2, ShieldCheck, FileText, CheckCircle2 } from 'lucide-react';
+import { PunchGrid, User, RestorationResult, Translation } from '../types';
 import VirtualPuncher from '../components/VirtualPuncher';
 import ResurrectionSequence from '../components/ResurrectionSequence';
-import ExorcismReportView from '../components/ExorcismReportView';
-import { analyzePunchCard, translateHolesToCode, generateTextDocumentation } from '../services/geminiService';
+import AuditReportView from '../components/AuditReportView';
+import ImageImportModule from '../components/ImageImportModule';
+import { translateHolesToCode } from '../services/geminiService';
 import { database } from '../services/databaseService';
 
 export default function ScannerView({ user }: { user: User }) {
   const [grid, setGrid] = useState<PunchGrid>(Array.from({ length: 80 }, () => Array(12).fill(false)));
   const [loading, setLoading] = useState(false);
   const [animating, setAnimating] = useState(false);
-  const [generatingDocs, setGeneratingDocs] = useState(false);
-  const [result, setResult] = useState<ResurrectionResult | null>(null);
+  const [result, setResult] = useState<RestorationResult | null>(null);
   const [activeTab, setActiveTab] = useState<string>('python');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleResurrection = async () => {
+  const handleHolesDetected = (holes: [number, number][]) => {
+    // Populate grid based on AI detection
+    const newGrid = Array.from({ length: 80 }, () => Array(12).fill(false));
+    holes.forEach(([col, row]) => {
+      if (col >= 0 && col < 80 && row >= 0 && row < 12) {
+        newGrid[col][row] = true;
+      }
+    });
+    setGrid(newGrid);
+  };
+
+  const handleProcess = async () => {
     setLoading(true);
     const holes: [number, number][] = [];
     grid.forEach((col, cIdx) => {
@@ -27,81 +37,57 @@ export default function ScannerView({ user }: { user: User }) {
     });
 
     if (holes.length === 0) {
-      alert("The card is void of logic. Inscribe code first.");
+      alert("No data pattern detected. Please select punches or import an image.");
       setLoading(false);
       return;
     }
 
     try {
       const translationData = await translateHolesToCode(holes);
-      const fullResult: ResurrectionResult = {
+      const fullResult: RestorationResult = {
         id: Math.random().toString(36).substr(2, 9),
         author: user.username,
         timestamp: Date.now(),
         likes: 0,
         targetLanguage: 'multi',
-        status: 'purified',
+        status: 'verified',
         originalCode: translationData.originalCode || "",
         resurrectedCode: translationData.resurrectedCode || "",
-        language: translationData.language || "Unknown",
+        language: translationData.language || "Legacy Logic",
         explanation: translationData.explanation || "",
         translations: translationData.translations || {},
-        exorcismReport: translationData.exorcismReport || [],
-        holes: holes
+        auditReport: translationData.auditReport || [],
+        holes: holes,
+        confidence: translationData.confidence || 99
       };
       
       setResult(fullResult);
       database.saveCard(fullResult);
       setAnimating(true);
+      
+      const updatedUser = { ...user };
+      updatedUser.stats.cardsDecoded += 1;
+      updatedUser.stats.systemIntegrations += (translationData.auditReport?.length || 0);
+      database.saveUser(updatedUser);
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Ritual broken. Try again.");
+      alert("System processing error. Pattern analysis module timed out.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGenerateDocs = async () => {
+  const handleShareResult = async () => {
     if (!result) return;
-    setGeneratingDocs(true);
+    const text = `Digitized ${result.language} restoration via PunchRevive. Integrity: ${result.confidence}%`;
     try {
-      const docs = await generateTextDocumentation(result.originalCode, result.language);
-      setResult({ ...result, documentation: docs });
-    } catch (e) {
-      alert("Failed to extract documentation from the void.");
-    } finally {
-      setGeneratingDocs(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setLoading(true);
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      try {
-        const { holes, confidence } = await analyzePunchCard(base64);
-        const newGrid = Array.from({ length: 80 }, () => Array(12).fill(false));
-        holes.forEach(([c, r]) => {
-          if (c < 80 && r < 12) newGrid[c][r] = true;
-        });
-        setGrid(newGrid);
-        alert(`Spectral scan complete. Confidence: ${confidence}%`);
-      } catch (err) {
-        console.error(err);
-        alert("OCR Ritual failed.");
-      } finally {
-        setLoading(false);
+      if (navigator.share) {
+        await navigator.share({ title: 'PunchRevive Restoration', text, url: window.location.href });
+      } else {
+        await navigator.clipboard.writeText(text);
+        alert("Digitization manifest copied to clipboard.");
       }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert("Logic copied to clipboard.");
+    } catch (err) {}
   };
 
   if (animating) return <ResurrectionSequence onComplete={() => setAnimating(false)} />;
@@ -109,152 +95,87 @@ export default function ScannerView({ user }: { user: User }) {
   if (result) {
     const translations = result.translations || {};
     const languages = Object.keys(translations);
-    const currentTranslation = translations[activeTab] as Translation;
+    const currentTranslation = (translations[activeTab] as Translation) || { code: "", notes: "" };
 
     return (
-      <div className="space-y-8 animate-in slide-in-from-bottom duration-700 pb-20">
-        <div className="flex justify-between items-center border-b border-[#0f0]/20 pb-4">
-          <h2 className="creepster text-4xl text-[#0f0] glow-text">The Reanimated Logic</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] bg-green-900/40 text-green-400 px-3 py-1 border border-green-500/30 rounded-full flex items-center gap-1 font-bold">
-              <CheckCircle2 className="w-3 h-3" /> {result.confidence || 85}% CONFIDENCE
-            </span>
-            <span className="text-[10px] text-[#0f0]/60 flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(result.timestamp).toLocaleTimeString()}</span>
+      <div className="space-y-10 animate-in slide-in-from-bottom duration-500 pb-20">
+        <div className="flex justify-between items-center border-b border-slate-800 pb-6">
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
+                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+             </div>
+             <div>
+                <h2 className="text-3xl font-bold text-white">Digitization Complete</h2>
+                <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Protocol PR-0x{result.id.toUpperCase()}</p>
+             </div>
+          </div>
+          <div className="flex items-center gap-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <span className="text-[10px] font-black uppercase text-slate-400">Confidence: {result.confidence}%</span>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          <div className="space-y-6">
-            {/* Original Fragment */}
-            <div className="bg-[#001100] border-2 border-[#0f0]/20 p-6 rounded relative group">
-               <div className="flex justify-between border-b border-[#0f0]/10 pb-4 mb-4 items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest opacity-40">🕰️ {result.language} Frag</span>
-                  <button onClick={() => copyToClipboard(result.originalCode)} className="text-[#0f0]/40 hover:text-[#0f0] transition-colors">
+        <div className="grid lg:grid-cols-2 gap-10 items-start">
+          <div className="space-y-8">
+            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl relative shadow-2xl group">
+               <div className="flex justify-between border-b border-slate-800 pb-6 mb-6 items-center">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-3">
+                    <Activity className="w-4 h-4" /> Detected: {result.language}
+                  </span>
+                  <button onClick={() => navigator.clipboard.writeText(result.originalCode)} className="text-slate-600 hover:text-white transition-all">
                     <Copy className="w-4 h-4" />
                   </button>
                </div>
-               <pre className="text-xl leading-relaxed glow-text-subtle font-mono text-[#0f0] whitespace-pre-wrap">{result.originalCode}</pre>
-               {result.explanation && (
-                 <p className="mt-4 text-xs text-[#0f0]/60 italic font-mono border-t border-[#0f0]/10 pt-4 bg-[#002200]/30 p-2 rounded">
-                   // {result.explanation}
-                 </p>
-               )}
+               <pre className="text-lg font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">{result.originalCode}</pre>
+               <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
 
-            {/* Translation Tabs */}
-            <div className="space-y-4">
-              <div className="flex gap-2 overflow-x-auto pb-2 border-b border-[#0f0]/10">
-                {languages.map(lang => (
+            <div className="space-y-6">
+              <div className="flex gap-1 p-1 bg-slate-950 border border-slate-800 rounded-2xl overflow-x-auto">
+                {languages.length > 0 ? languages.map(lang => (
                   <button 
                     key={lang}
                     onClick={() => setActiveTab(lang)}
-                    className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-t-md whitespace-nowrap ${activeTab === lang ? 'bg-[#0f0] text-black shadow-[0_0_10px_#0f0]' : 'text-[#0f0]/30 hover:text-[#0f0]/60'}`}
+                    className={`px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === lang ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
                   >
                     {lang}
                   </button>
-                ))}
+                )) : (
+                  <div className="px-6 py-3 text-[10px] text-slate-600 italic">No translations available.</div>
+                )}
               </div>
               
-              <div className="bg-[#001100] border border-[#0f0]/20 p-6 rounded shadow-inner">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-[10px] font-bold text-[#0f0]/40 uppercase tracking-widest">Spectral Translation: {activeTab}</span>
-                  <button onClick={() => copyToClipboard(currentTranslation?.code || "")} className="text-[#0f0]/40 hover:text-[#0f0] transition-colors">
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-                <pre className="text-sm font-mono text-[#0f0] bg-black/60 p-5 rounded-lg overflow-x-auto border border-[#0f0]/5 scrollbar-thin">
-                  {currentTranslation?.code || "// No translation found"}
+              <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-xl">
+                <pre className="text-sm font-mono text-emerald-400/90 bg-slate-950 p-6 rounded-2xl border border-white/5 overflow-x-auto leading-relaxed shadow-inner">
+                  {currentTranslation.code || "// Analysis still in progress..."}
                 </pre>
-                {currentTranslation?.notes && (
-                  <div className="mt-4 p-3 bg-blue-900/10 border-l-2 border-blue-500 rounded-r">
-                    <p className="text-[10px] text-blue-400 font-bold uppercase mb-1">Scientist's Note:</p>
-                    <p className="text-[10px] text-blue-300 italic">{currentTranslation.notes}</p>
-                  </div>
+                {currentTranslation.notes && (
+                  <p className="mt-4 text-[11px] text-slate-500 italic px-2">Note: {currentTranslation.notes}</p>
                 )}
               </div>
             </div>
-
-            <button onClick={() => setResult(null)} className="w-full py-5 border border-[#0f0]/40 text-[#0f0] uppercase font-bold tracking-[0.2em] hover:bg-[#0f0]/10 transition-all flex items-center justify-center gap-3 rounded group">
-              <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" /> Inscribe Another Sigil
-            </button>
           </div>
           
-          <div className="space-y-8">
-            <ExorcismReportView reports={result.exorcismReport} />
-            
-            {/* Documentation Section */}
-            <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="creepster text-2xl text-[#0f0]/80 flex items-center gap-2"><FileText className="w-5 h-5" /> Spectral Docs</h3>
-                    {!result.documentation && (
-                        <button 
-                            onClick={handleGenerateDocs}
-                            disabled={generatingDocs}
-                            className="text-[10px] bg-[#0f0]/10 px-3 py-1 border border-[#0f0]/30 text-[#0f0] font-black uppercase tracking-widest hover:bg-[#0f0] hover:text-black transition-all disabled:opacity-50"
-                        >
-                            {generatingDocs ? 'TRANSCRIBING...' : '✨ GENERATE DOCS'}
-                        </button>
-                    )}
-                </div>
+          <div className="space-y-10">
+            <AuditReportView reports={result.auditReport} />
 
-                {result.documentation ? (
-                    <div className="bg-[#001100] border border-[#0f0]/20 p-6 rounded-lg space-y-6">
-                        <div className="space-y-2">
-                            <h4 className="text-[10px] font-black text-[#0f0]/40 uppercase tracking-widest">Manifest Summary</h4>
-                            <p className="text-xs text-[#0f0]/80 italic border-l-2 border-[#0f0]/20 pl-3">{result.documentation.plainSummary}</p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                            <h4 className="text-[10px] font-black text-[#0f0]/40 uppercase tracking-widest">Logical Breakdown</h4>
-                            <ul className="space-y-2">
-                                {result.documentation.stepByStep.map((step, i) => (
-                                    <li key={i} className="text-[10px] text-[#0f0]/60 flex items-start gap-2">
-                                        <span className="text-[#0f0] font-bold">{i + 1}.</span>
-                                        <span>{step}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <h4 className="text-[10px] font-black text-[#0f0]/40 uppercase tracking-widest">Historical context</h4>
-                                <p className="text-[9px] text-[#0f0]/50 leading-tight">{result.documentation.historicalContext}</p>
-                            </div>
-                            <div className="space-y-2">
-                                <h4 className="text-[10px] font-black text-[#0f0]/40 uppercase tracking-widest">Modern Equivalent</h4>
-                                <p className="text-[9px] text-[#0f0]/50 leading-tight">{result.documentation.modernEquivalent}</p>
-                            </div>
-                        </div>
-
-                        <div className="pt-4 border-t border-[#0f0]/5 flex justify-between items-center">
-                            <div className="flex gap-2">
-                                {result.documentation.useCases.map((u, i) => (
-                                    <span key={i} className="text-[8px] bg-black border border-[#0f0]/20 px-2 py-0.5 rounded text-[#0f0]/40">#{u}</span>
-                                ))}
-                            </div>
-                            <button onClick={() => copyToClipboard(JSON.stringify(result.documentation, null, 2))} className="text-[#0f0]/40 hover:text-[#0f0]"><Copy className="w-3 h-3" /></button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="p-8 border border-dashed border-[#0f0]/10 rounded-lg text-center opacity-40">
-                        <BookOpen className="w-10 h-10 mx-auto mb-3 text-[#0f0]/20" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">No spectral analysis generated yet.</p>
-                    </div>
-                )}
+            <div className="grid grid-cols-2 gap-4">
+                <button onClick={handleShareResult} className="py-5 border border-slate-800 bg-slate-900/50 text-slate-400 font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-3 text-[10px]">
+                    <Share2 className="w-4 h-4" /> Export Metadata
+                </button>
+                <button onClick={() => setResult(null)} className="py-5 border border-slate-800 bg-slate-900/50 text-slate-400 font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-3 text-[10px]">
+                    <RefreshCw className="w-4 h-4" /> Archive & New Scan
+                </button>
             </div>
-
-            {/* Action Bar */}
-            <div className="grid grid-cols-3 gap-3">
-                <button className="py-3 border border-[#0f0]/20 text-[9px] font-bold uppercase hover:bg-[#0f0]/5 flex flex-col items-center gap-1 group">
-                    <Download className="w-4 h-4 text-[#0f0]/40 group-hover:text-[#0f0]" /> <span>VAULT</span>
-                </button>
-                <button className="py-3 border border-[#0f0]/20 text-[9px] font-bold uppercase hover:bg-[#0f0]/5 flex flex-col items-center gap-1 group">
-                    <Zap className="w-4 h-4 text-[#0f0]/40 group-hover:text-[#0f0]" /> <span>ENCRYPT</span>
-                </button>
-                <button className="py-3 border border-[#0f0]/20 text-[9px] font-bold uppercase hover:bg-[#0f0]/5 flex flex-col items-center gap-1 group">
-                    <ChevronRight className="w-4 h-4 text-[#0f0]/40 group-hover:text-[#0f0]" /> <span>SHARE</span>
-                </button>
+            
+            <div className="bg-emerald-500/5 border border-emerald-500/10 p-6 rounded-2xl flex items-start gap-4">
+               <FileText className="w-6 h-6 text-emerald-500 shrink-0 mt-1" />
+               <div className="space-y-1">
+                 <h4 className="text-xs font-black text-white uppercase tracking-widest">Restoration Context</h4>
+                 <p className="text-[11px] text-slate-400 leading-relaxed italic">
+                    "{result.explanation || "System generated logic based on Hollerith pattern matching and modern code synthesis."}"
+                 </p>
+               </div>
             </div>
           </div>
         </div>
@@ -263,36 +184,45 @@ export default function ScannerView({ user }: { user: User }) {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
-        <div className="space-y-2">
-            <h3 className="creepster text-3xl text-[#0f0]/80 flex items-center gap-2">
-                <FlaskConical className="w-6 h-6" /> The Inscriber
-            </h3>
-            <p className="text-[10px] text-[#0f0]/40 italic">Type characters or punch holes manually to prepare the soul message.</p>
-        </div>
-      </div>
-
-      <VirtualPuncher grid={grid} setGrid={setGrid} audioEnabled={true} />
-
-      <div className="flex flex-col items-center gap-6 py-10">
-          <button 
-            onClick={handleResurrection}
-            disabled={loading}
-            className="group relative px-20 py-6 bg-[#0f0] text-black font-black text-3xl hover:scale-105 transition-all shadow-[0_0_40px_rgba(0,255,0,0.3)] uppercase creepster tracking-widest disabled:opacity-50"
-          >
-            {loading ? <RefreshCw className="w-8 h-8 animate-spin" /> : "TRANSMIT DATA"}
-          </button>
+    <div className="space-y-12 animate-in fade-in duration-500 pb-20">
+      <div className="grid lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-1 space-y-6">
+          <ImageImportModule onHolesDetected={handleHolesDetected} />
           
-          <div className="flex gap-4">
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="px-6 py-2 border border-[#0f0]/30 text-[#0f0]/60 hover:text-[#0f0] hover:border-[#0f0] transition-all text-xs font-bold uppercase tracking-widest flex items-center gap-2"
-            >
-              <Camera className="w-4 h-4" /> Load External Sigil
-            </button>
-            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl space-y-4 shadow-xl">
+             <div className="flex items-center gap-3 text-emerald-500">
+                <Cpu className="w-5 h-5" />
+                <h4 className="text-xs font-black uppercase tracking-widest">Lab Protocols</h4>
+             </div>
+             <ul className="text-[11px] text-slate-500 space-y-2 italic">
+               <li>• Calibrate card alignment with the 80-column grid.</li>
+               <li>• Ensure lighting highlights physical perforations.</li>
+               <li>• AI will automatically resolve legacy logic sequences.</li>
+             </ul>
           </div>
+        </div>
+
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-slate-900/30 border border-slate-800/50 p-10 rounded-[2.5rem] shadow-2xl">
+            <VirtualPuncher grid={grid} setGrid={setGrid} audioEnabled={true} />
+          </div>
+
+          <div className="flex flex-col items-center gap-6 py-6">
+              <button 
+                onClick={handleProcess}
+                disabled={loading}
+                className="group relative px-20 py-8 bg-emerald-600 text-white font-black text-2xl hover:bg-emerald-500 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_50px_rgba(16,185,129,0.2)] rounded-3xl tracking-[0.2em] disabled:opacity-50 uppercase flex items-center gap-6"
+              >
+                {loading ? <RefreshCw className="w-8 h-8 animate-spin" /> : (
+                  <>
+                    <Cpu className="w-8 h-8 group-hover:rotate-12 transition-transform" />
+                    RESTORE LOGIC
+                  </>
+                )}
+              </button>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest opacity-40">Ready for digital synthesis sequence.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

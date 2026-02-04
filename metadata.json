@@ -1,6 +1,6 @@
 {
   "name": "PunchRevive",
-  "description": "Resurrect dead code from vintage punch cards using AI computer vision and translation, styled in a haunting 1960s horror laboratory aesthetic.",
+  "description": "Digitize and restore legacy code from vintage punch cards using AI computer vision and modern translation protocols.",
   "requestFramePermissions": [
     "camera"
   ]

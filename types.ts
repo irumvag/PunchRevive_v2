@@ -1,10 +1,10 @@
 
 export type PunchGrid = boolean[][]; // 80 columns x 12 rows
 
-export interface ExorcismReport {
-  bug: string;
-  remedy: string;
-  demonName: string;
+export interface CodeAuditReport {
+  issue: string;
+  optimization: string;
+  moduleName: string;
 }
 
 export interface Translation {
@@ -22,20 +22,20 @@ export interface Documentation {
   learningNotes?: string;
 }
 
-export interface ResurrectionResult {
+export interface RestorationResult {
   id: string;
   author: string;
   originalCode: string;
-  resurrectedCode: string; // This will act as the "main" translation or explanation
-  language: string; // Original detected language
+  resurrectedCode: string; 
+  language: string; 
   targetLanguage: string;
   translations?: Record<string, Translation>;
   explanation?: string;
   confidence?: number;
   holes?: [number, number][];
-  exorcismReport: ExorcismReport[];
+  auditReport: CodeAuditReport[];
   documentation?: Documentation;
-  status: 'haunting' | 'purified' | 'failed';
+  status: 'processing' | 'verified' | 'failed';
   timestamp: number;
   likes: number;
 }
@@ -52,21 +52,24 @@ export interface User {
   id: string;
   username: string;
   joined: number;
+  isVerified: boolean;
   stats: {
     cardsDecoded: number;
     messagesSent: number;
-    demonsBanished: number;
+    optimizationsMade: number;
+    systemIntegrations: number;
   };
   achievements: string[];
 }
 
-export interface SpectralMessage {
+export interface SecureMessage {
   id: string;
   from: string;
   to: string;
   timestamp: number;
   encryptedGrid: PunchGrid;
   ciphertext?: string;
+  preview?: string; 
   keyCardId?: string;
   isDecrypted: boolean;
   plaintext?: string;

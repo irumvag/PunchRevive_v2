@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { database } from '../services/databaseService';
-import { Eye, Book, Code, User, Calendar, Search, Filter, X } from 'lucide-react';
-import { ResurrectionResult } from '../types';
+import { Eye, Book, Code, User, Search, X, Archive, Filter } from 'lucide-react';
+import { RestorationResult, Translation } from '../types';
 
 export default function GalleryView() {
-  const [cards, setCards] = useState<ResurrectionResult[]>([]);
+  const [cards, setCards] = useState<RestorationResult[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredCards, setFilteredCards] = useState<ResurrectionResult[]>([]);
+  const [filteredCards, setFilteredCards] = useState<RestorationResult[]>([]);
   const [filterType, setFilterType] = useState<'all' | 'language' | 'date'>('all');
 
   useEffect(() => {
@@ -30,8 +30,8 @@ export default function GalleryView() {
           card.author,
           card.explanation || '',
           card.resurrectedCode,
-          Object.keys(card.translations || {}).join(' '),
-          Object.values(card.translations || {}).map(t => (t as any).code).join(' ')
+          ...Object.keys(card.translations || {}),
+          ...Object.values(card.translations || {}).map(t => (t as Translation).code)
         ].join(' ').toLowerCase();
 
         return searchableText.includes(q);
@@ -49,99 +49,89 @@ export default function GalleryView() {
 
   return (
     <div className="space-y-8 animate-in slide-in-from-right duration-700 pb-20">
-      <div className="flex flex-col md:flex-row justify-between items-center border-b border-[#0f0]/10 pb-6 gap-6">
-          <div className="flex items-center gap-4 w-full">
-             <Book className="w-8 h-8 text-[#0f0]" />
-             <h2 className="creepster text-4xl text-[#0f0]">The Spectral Vault</h2>
+      <div className="flex flex-col md:flex-row justify-between items-center border-b border-slate-800 pb-8 gap-8">
+          <div className="flex items-center gap-5 w-full">
+             <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center">
+                <Archive className="w-7 h-7 text-emerald-500" />
+             </div>
+             <div>
+                <h2 className="text-4xl font-extrabold text-white tracking-tight">Data Archive</h2>
+                <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Centralized Heritage Logic</p>
+             </div>
           </div>
           
           <div className="flex flex-col md:flex-row gap-4 w-full justify-end">
-            <div className="relative group min-w-[300px]">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0f0]/40 group-focus-within:text-[#0f0]" />
+            <div className="relative group min-w-[320px]">
+               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-emerald-500" />
                <input 
                  type="text" 
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
-                 placeholder="Search ancient logic, authors, or eras..." 
-                 className="bg-black border border-[#0f0]/20 pl-10 pr-10 py-2 text-xs focus:border-[#0f0] outline-none w-full text-[#0f0]"
+                 placeholder="Search modules, authors, eras..." 
+                 className="bg-slate-900 border border-slate-800 pl-12 pr-12 py-3 text-sm focus:border-emerald-500 outline-none w-full text-white rounded-xl transition-all"
                />
                {searchQuery && (
-                 <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0f0]/40 hover:text-[#0f0]">
-                   <X className="w-3 h-3" />
+                 <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white">
+                   <X className="w-4 h-4" />
                  </button>
                )}
             </div>
 
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setFilterType('all')}
-                className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest border transition-all ${filterType === 'all' ? 'bg-[#0f0] text-black border-[#0f0]' : 'border-[#0f0]/20 text-[#0f0]/40 hover:text-[#0f0]'}`}
-              >
-                All
-              </button>
-              <button 
-                onClick={() => setFilterType('language')}
-                className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest border transition-all ${filterType === 'language' ? 'bg-[#0f0] text-black border-[#0f0]' : 'border-[#0f0]/20 text-[#0f0]/40 hover:text-[#0f0]'}`}
-              >
-                Lang
-              </button>
-              <button 
-                onClick={() => setFilterType('date')}
-                className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest border transition-all ${filterType === 'date' ? 'bg-[#0f0] text-black border-[#0f0]' : 'border-[#0f0]/20 text-[#0f0]/40 hover:text-[#0f0]'}`}
-              >
-                Date
-              </button>
+            <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'language', label: 'By Language' },
+                { id: 'date', label: 'By Date' }
+              ].map(opt => (
+                <button 
+                  key={opt.id}
+                  onClick={() => setFilterType(opt.id as any)}
+                  className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${filterType === opt.id ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
       </div>
 
-      <div className="flex justify-between items-center text-[10px] text-[#0f0]/40 uppercase font-black tracking-widest">
-        <span>Vault contains {cards.length} Spectral Fragments</span>
-        {searchQuery && <span>Filter Result: {filteredCards.length} matches</span>}
-      </div>
-
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
         {filteredCards.length === 0 ? (
-          <div className="col-span-full py-40 text-center opacity-20 italic space-y-4">
-            <Search className="w-12 h-12 mx-auto mb-4" />
-            <p className="creepster text-2xl">The vault yields no results for your query.</p>
-            <button onClick={() => setSearchQuery('')} className="text-[10px] underline hover:text-white transition-colors">Clear Interception Query</button>
+          <div className="col-span-full py-48 text-center border border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
+            <Search className="w-16 h-16 mx-auto mb-6 text-slate-800" />
+            <p className="text-2xl font-bold text-slate-600">No matching records found in archive</p>
+            <button onClick={() => setSearchQuery('')} className="mt-4 text-emerald-500 hover:underline text-xs font-bold uppercase tracking-widest">Clear Search Query</button>
           </div>
         ) : filteredCards.map(card => (
-          <div key={card.id} className="bg-[#001100] border border-[#0f0]/20 rounded-lg p-6 hover:border-[#0f0] transition-all group cursor-pointer relative overflow-hidden flex flex-col justify-between shadow-lg hover:shadow-[#0f0]/10">
-             <div className="absolute top-0 right-0 p-3 flex gap-2">
-                <span className="text-[8px] font-black uppercase bg-[#0f0]/10 text-[#0f0] px-2 py-1 rounded border border-[#0f0]/10">
+          <div key={card.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-emerald-500/50 transition-all group flex flex-col justify-between shadow-lg">
+             <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-3">
+                   <div className="w-12 h-12 rounded-xl border border-slate-800 flex items-center justify-center bg-slate-950 group-hover:border-emerald-500/50 transition-colors">
+                      <User className="w-5 h-5 text-slate-500 group-hover:text-emerald-500" />
+                   </div>
+                   <div>
+                      <p className="text-xs font-black text-white uppercase tracking-tight">{card.author}</p>
+                      <p className="text-[10px] text-slate-600 font-mono">{new Date(card.timestamp).toLocaleDateString()}</p>
+                   </div>
+                </div>
+                <span className="text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/10">
                    {card.language}
                 </span>
              </div>
-             
-             <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-full border border-[#0f0]/20 flex items-center justify-center bg-black group-hover:border-[#0f0]/60 transition-colors">
-                      <User className="w-5 h-5 opacity-40 group-hover:opacity-100" />
-                   </div>
-                   <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-[#0f0]/80">{card.author}</p>
-                      <p className="text-[10px] text-[#0f0]/30 italic">{new Date(card.timestamp).toLocaleDateString()}</p>
-                   </div>
-                </div>
 
-                <div className="h-32 overflow-hidden relative border border-[#0f0]/5 p-3 bg-black/40 rounded shadow-inner">
-                   <div className="absolute inset-0 bg-gradient-to-t from-[#001100] to-transparent z-10"></div>
-                   <pre className="text-[10px] font-mono text-[#0f0]/60 opacity-50 whitespace-pre-wrap group-hover:opacity-80 transition-opacity">{card.resurrectedCode}</pre>
-                </div>
+             <div className="h-40 overflow-hidden relative border border-slate-800 p-4 bg-slate-950 rounded-xl shadow-inner mb-6">
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10"></div>
+                <pre className="text-[10px] font-mono text-slate-500 whitespace-pre-wrap group-hover:text-slate-300 transition-colors">{card.resurrectedCode}</pre>
+             </div>
 
-                <div className="flex justify-between items-center pt-4 border-t border-[#0f0]/5">
-                   <div className="flex items-center gap-4 text-[10px] font-black text-[#0f0]/40 uppercase tracking-widest">
-                      <span className="flex items-center gap-1 hover:text-[#0f0] transition-colors"><Eye className="w-3 h-3" /> 1.2k</span>
-                      <span className="flex items-center gap-1 hover:text-[#0f0] transition-colors">Possessed: {card.exorcismReport.length}</span>
-                   </div>
-                   <div className="flex gap-2">
-                        <button className="p-2 border border-[#0f0]/10 hover:border-[#0f0] hover:bg-[#0f0] hover:text-black transition-all rounded">
-                            <Code className="w-4 h-4" />
-                        </button>
-                   </div>
+             <div className="flex justify-between items-center pt-6 border-t border-slate-800">
+                <div className="flex items-center gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                   <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> 843</span>
+                   <span className="flex items-center gap-1.5">Optimized: {card.auditReport.length}</span>
                 </div>
+                <button className="p-2.5 bg-slate-950 border border-slate-800 hover:border-emerald-500 text-slate-400 hover:text-emerald-500 transition-all rounded-xl">
+                   <Code className="w-5 h-5" />
+                </button>
              </div>
           </div>
         ))}

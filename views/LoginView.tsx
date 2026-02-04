@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { Skull, Power, ShieldAlert } from 'lucide-react';
+import { Cpu, Power, ShieldCheck, UserPlus, Info } from 'lucide-react';
 
 export default function LoginView({ onLogin }: { onLogin: (u: string) => void }) {
   const [username, setUsername] = useState('');
+  const [isSignup, setIsSignup] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
     const timers = [
-        setTimeout(() => setStep(1), 1000),
-        setTimeout(() => setStep(2), 2500),
+        setTimeout(() => setStep(1), 800),
+        setTimeout(() => setStep(2), 1600),
+        setTimeout(() => setStep(3), 2400),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -20,51 +22,75 @@ export default function LoginView({ onLogin }: { onLogin: (u: string) => void })
   };
 
   return (
-    <div className="h-screen bg-black flex items-center justify-center p-6 selection:bg-[#0f0] selection:text-black">
-      <div className="max-w-md w-full space-y-12">
-        <div className="text-center space-y-4">
+    <div className="h-screen bg-[#020617] flex items-center justify-center p-6 selection:bg-emerald-500 selection:text-white">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center space-y-6">
           <div className="relative inline-block">
-             <Skull className="w-24 h-24 text-[#0f0] mx-auto animate-pulse" />
-             <div className="absolute inset-0 bg-[#0f0]/20 blur-2xl animate-pulse"></div>
+             <div className="w-24 h-24 bg-emerald-500/10 rounded-2xl border border-emerald-500/30 flex items-center justify-center relative z-10">
+                <Cpu className="w-12 h-12 text-emerald-500 animate-pulse" />
+             </div>
+             <div className="absolute inset-0 bg-emerald-500/10 blur-3xl animate-pulse"></div>
           </div>
-          <h1 className="creepster text-7xl text-[#0f0] tracking-tighter glow-text">PUNCHREVIVE</h1>
-          <p className="text-[10px] text-[#0f0]/40 font-black tracking-[0.5em] uppercase italic">The Cryptographic Crypt</p>
+          <div className="space-y-2">
+            <h1 className="text-5xl font-extrabold text-white tracking-tighter">PUNCH<span className="text-emerald-500">REVIVE</span></h1>
+            <p className="text-[10px] text-emerald-500/40 font-black tracking-[0.5em] uppercase">
+              {isSignup ? 'New Scientist Registration' : 'Enterprise Restoration Protocol'}
+            </p>
+          </div>
         </div>
 
-        <div className="bg-[#001100] border-2 border-[#0f0]/20 p-8 rounded shadow-[0_0_50px_rgba(0,255,0,0.1)] space-y-8 font-mono relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-[#0f0]/10"></div>
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl space-y-8 font-mono relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
           
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2 text-[10px] text-slate-500">
             <p className={`${step >= 1 ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>[ SYSTEM INITIALIZING... ]</p>
-            <p className={`${step >= 2 ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500 text-[#0f0]/60`}>> FETCHING SPECTRAL NODES... DONE</p>
-            <p className={`${step >= 2 ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500 text-[#0f0]/60`}>> BYPASSING ANALYTICAL ENGINE... OK</p>
+            <p className={`${step >= 2 ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500 text-emerald-500/60`}>> SECURE_CHANNEL_READY</p>
+            <p className={`${step >= 3 ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500 text-emerald-500/60`}>> DB_CONNECTION_STABLE</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] text-[#0f0]/40 uppercase font-bold tracking-widest">Scientist Identification</label>
+              <label className="text-[10px] text-slate-400 uppercase font-bold tracking-widest flex justify-between">
+                <span>Scientist Identity</span>
+                {isSignup && <span className="text-emerald-500">Unverified Mode</span>}
+              </label>
               <input 
                 autoFocus
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter Username..."
-                className="w-full bg-black border border-[#0f0]/30 p-4 text-[#0f0] focus:border-[#0f0] outline-none placeholder:text-[#0f0]/20 transition-all font-bold"
+                placeholder="Scientist Username..."
+                className="w-full bg-slate-950 border border-slate-800 p-4 text-emerald-500 focus:border-emerald-500 outline-none placeholder:text-slate-700 transition-all font-bold rounded-xl"
               />
             </div>
-            <button 
-                type="submit"
-                className="w-full bg-[#0f0] text-black py-4 font-black uppercase tracking-[0.3em] hover:bg-white transition-all flex items-center justify-center gap-2 group"
-            >
-              <Power className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-              BOOT SYSTEM
-            </button>
+            
+            <div className="space-y-4">
+              <button 
+                  type="submit"
+                  className="w-full bg-emerald-600 text-white py-4 font-black uppercase tracking-[0.3em] hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 group rounded-xl shadow-lg shadow-emerald-900/20"
+              >
+                {isSignup ? <UserPlus className="w-5 h-5" /> : <Power className="w-5 h-5" />}
+                {isSignup ? 'Register Profile' : 'Initialize Session'}
+              </button>
+              
+              <button 
+                type="button"
+                onClick={() => setIsSignup(!isSignup)}
+                className="w-full py-2 text-[10px] text-slate-500 hover:text-emerald-500 transition-colors uppercase font-bold tracking-widest flex items-center justify-center gap-2"
+              >
+                {isSignup ? 'Return to Login' : 'Create New Scientist Profile'}
+              </button>
+            </div>
           </form>
 
-          <div className="flex items-center gap-2 text-[8px] text-red-500/50 uppercase font-bold justify-center pt-4">
-             <ShieldAlert className="w-3 h-3" />
-             Unauthorized access will result in logical possession.
-          </div>
+          {isSignup && (
+            <div className="bg-emerald-500/5 border border-emerald-500/10 p-4 rounded-xl flex gap-3">
+              <Info className="w-4 h-4 text-emerald-500 shrink-0" />
+              <p className="text-[9px] text-slate-400 leading-relaxed italic">
+                Secure comms require identity verification after first login. Restoration tools are available immediately.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
